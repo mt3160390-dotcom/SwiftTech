@@ -23,7 +23,7 @@ import UserCartWrapper from "./cart-wrapper";
 import { useEffect, useState } from "react";
 import { fetchCartItems } from "@/store/shop/cart-slice";
 import { Label } from "../ui/label";
-import logo from "../Public/logo.png"; 
+import logo from "../Public/logo.png";
 
 function MenuItems() {
   const navigate = useNavigate();
@@ -34,19 +34,19 @@ function MenuItems() {
     sessionStorage.removeItem("filters");
     const currentFilter =
       getCurrentMenuItem.id !== "home" &&
-      getCurrentMenuItem.id !== "products" &&
-      getCurrentMenuItem.id !== "search"
+        getCurrentMenuItem.id !== "products" &&
+        getCurrentMenuItem.id !== "search"
         ? {
-            category: [getCurrentMenuItem.id],
-          }
+          category: [getCurrentMenuItem.id],
+        }
         : null;
 
     sessionStorage.setItem("filters", JSON.stringify(currentFilter));
 
     location.pathname.includes("listing") && currentFilter !== null
       ? setSearchParams(
-          new URLSearchParams(`?category=${getCurrentMenuItem.id}`)
-        )
+        new URLSearchParams(`?category=${getCurrentMenuItem.id}`)
+      )
       : navigate(getCurrentMenuItem.path);
   }
 
@@ -73,12 +73,16 @@ function HeaderRightContent() {
   const dispatch = useDispatch();
 
   function handleLogout() {
-    dispatch(logoutUser());
+    dispatch(logoutUser()).then(() => {
+      navigate("/auth/login");
+    });
   }
 
   useEffect(() => {
-    dispatch(fetchCartItems(user?.id));
-  }, [dispatch]);
+    if (user && user.id) {
+      dispatch(fetchCartItems(user.id));
+    }
+  }, [dispatch, user?.id]);
 
   console.log(cartItems, "sangam");
 
@@ -137,11 +141,11 @@ function ShoppingHeader() {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b" style={{backgroundColor: 'white' }}>
+    <header className="sticky top-0 z-40 w-full border-b" style={{ backgroundColor: 'white' }}>
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         <Link to="/shop/home" className="flex items-center gap-2">
           <img src={logo} alt="Logo" className="h-12 w-auto" />
-          <span className="font-bold text-black" style={{fontFamily: 'Playfair Display',fontSize: '1.75rem'}}>SwiftTech</span>
+          <span className="font-bold text-black" style={{ fontFamily: 'Playfair Display', fontSize: '1.75rem' }}>SwiftTech</span>
         </Link>
         <Sheet>
           <SheetTrigger asChild>

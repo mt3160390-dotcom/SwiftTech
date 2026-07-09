@@ -1,4 +1,4 @@
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useLocation } from "react-router-dom";
 import AuthLayout from "./components/auth/layout";
 import AuthLogin from "./pages/auth/login";
 import AuthRegister from "./pages/auth/register";
@@ -27,17 +27,28 @@ import EsewaReturnPage from "./pages/shopping-view/esewa-return";
 import PaymentSuccessPage from "./pages/shopping-view/payment-success";
 import SearchProducts from "./pages/shopping-view/search";
 
+// Paths that guests can access without waiting for auth to resolve
+const PUBLIC_PATHS = ["/", "/shop/home", "/shop/listing", "/shop/search", "/shop"];
+
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
     (state) => state.auth
   );
   const dispatch = useDispatch();
+  const location = useLocation();
 
   useEffect(() => {
     dispatch(checkAuth());
   }, [dispatch]);
 
-  if (isLoading) return <Skeleton className="w-[800] bg-black h-[600px]" />;
+  // Show skeleton only for auth-required pages while resolving session.
+  // Public shop pages render immediately so guests never see a blank screen.
+  const isPublicPath = PUBLIC_PATHS.some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + "/")
+  );
+
+  if (isLoading && !isPublicPath)
+    return <Skeleton className="w-[800] bg-black h-[600px]" />;
 
   console.log(isLoading, user);
 
@@ -47,10 +58,7 @@ function App() {
         <Route
           path="/"
           element={
-            <CheckAuth
-              isAuthenticated={isAuthenticated}
-              user={user}
-            ></CheckAuth>
+            <CheckAuth isAuthenticated={isAuthenticated} user={user} />
           }
         />
         <Route

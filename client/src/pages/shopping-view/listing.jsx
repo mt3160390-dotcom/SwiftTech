@@ -12,6 +12,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { sortOptions } from "@/config";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
+import { useNavigate } from "react-router-dom";
 import {
   fetchAllFilteredProducts,
   fetchProductDetails,
@@ -39,6 +40,7 @@ function createSearchParamsHelper(filterParams) {
 
 function ShoppingListing() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { productList, productDetails } = useSelector(
     (state) => state.shopProducts
   );
@@ -102,6 +104,12 @@ function ShoppingListing() {
           return;
         }
       }
+    }
+
+    if (!user) {
+      toast({ title: "Please sign up or login to add items to cart" });
+      navigate("/auth/register");
+      return;
     }
 
     dispatch(

@@ -28,7 +28,7 @@ import PaymentSuccessPage from "./pages/shopping-view/payment-success";
 import SearchProducts from "./pages/shopping-view/search";
 
 // Paths that guests can access without waiting for auth to resolve
-const PUBLIC_PATHS = ["/", "/shop/home", "/shop/listing", "/shop/search", "/shop"];
+const PUBLIC_PATHS = ["/", "/shop/home", "/shop/listing", "/shop/search", "/shop", "/shop/esewa-return"];
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -110,9 +110,16 @@ function App() {
           <Route path="checkout" element={<ShoppingCheckout />} />
           <Route path="account" element={<ShoppingAccount />} />
           <Route path="paypal-return" element={<PaypalReturnPage />} />
-          <Route path="esewa-return" element={<EsewaReturnPage />} />
           <Route path="payment-success" element={<PaymentSuccessPage />} />
           <Route path="search" element={<SearchProducts />} />
+        </Route>
+        {/* eSewa return is outside CheckAuth so it always renders immediately
+            after the payment gateway redirects back, regardless of auth state */}
+        <Route
+          path="/shop"
+          element={<ShoppingLayout />}
+        >
+          <Route path="esewa-return" element={<EsewaReturnPage />} />
         </Route>
         <Route path="/unauth-page" element={<UnauthPage />} />
         <Route path="*" element={<NotFound />} />

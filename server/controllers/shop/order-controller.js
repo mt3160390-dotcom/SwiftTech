@@ -211,11 +211,13 @@ const initiateEsewaPayment = async (req, res) => {
     } = req.body;
 
     console.log("=== eSewa Payment Initiation ===");
-    console.log("userId:", userId);
-    console.log("totalAmount:", totalAmount);
-    console.log("cartId:", cartId);
+    console.log("userId:", userId, "| totalAmount:", totalAmount);
 
-    // Create order in database
+    // Generate payment data first so we have the transaction_uuid
+    const tempOrder = { totalAmount };
+    const esewaPaymentData = createEsewaPaymentData(tempOrder);
+
+    // Persist order with the transaction_uuid stored in paymentId for later verification
     const newlyCreatedOrder = new Order({
       userId,
       cartId,
@@ -227,14 +229,12 @@ const initiateEsewaPayment = async (req, res) => {
       totalAmount,
       orderDate: new Date(),
       orderUpdateDate: new Date(),
+      paymentId: esewaPaymentData.transaction_uuid,
     });
 
     await newlyCreatedOrder.save();
     console.log("Order created:", newlyCreatedOrder._id);
-
-    // Generate eSewa payment data
-    const esewaPaymentData = createEsewaPaymentData(newlyCreatedOrder);
-    console.log("eSewa payment data generated:", esewaPaymentData);
+    console.log("Transaction UUID:", esewaPaymentData.transaction_uuid);
 
     res.status(201).json({
       success: true,
@@ -242,6 +242,7 @@ const initiateEsewaPayment = async (req, res) => {
         paymentData: esewaPaymentData.paymentData,
         orderId: newlyCreatedOrder._id,
         formUrl: esewaPaymentData.formUrl,
+        transaction_uuid: esewaPaymentData.transaction_uuid,
       },
     });
   } catch (e) {
@@ -261,29 +262,40 @@ const captureEsewaPayment = async (req, res) => {
 
     console.log("eSewa capture request:", { orderId, transactionCode, status, totalAmount, transactionUuid });
 
-    // Validate input
-    if (!orderId || !transactionCode || status !== "COMPLETE") {
+    // Basic input validation
+    if (!orderId || !status) {
       return res.status(400).json({
         success: false,
-        message: "Invalid payment parameters",
+        message: "orderId and status are required",
       });
     }
 
-    let order = await Order.findById(orderId);
+    if (status !== "COMPLETE") {
+      return res.status(400).json({
+        success: false,
+        message: `Payment not completed. Status: ${status}`,
+      });
+    }
+
+    const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Order not found",
-      });
+      return res.status(404).json({ success: false, message: "Order not found" });
     }
+
+    if (order.paymentStatus === "paid") {
+      return res.status(400).json({ success: false, message: "Order already paid" });
+    }
+
+    // Use transaction_uuid stored at order-creation time (prevents UUID spoofing)
+    const uuidToVerify = order.paymentId || transactionUuid;
 
     // Verify the transaction
     const verificationResult = await verifyEsewaTransaction({
-      transaction_code: transactionCode,
-      status: status,
+      transaction_uuid: uuidToVerify,
       total_amount: totalAmount || order.totalAmount,
-      transaction_uuid: transactionUuid,
+      transaction_code: transactionCode,
+      redirect_status: status,
     });
 
     if (!verificationResult.success) {
@@ -293,23 +305,15 @@ const captureEsewaPayment = async (req, res) => {
       });
     }
 
-    // Check if already paid (prevent double payment)
-    if (order.paymentStatus === "paid") {
-      return res.status(400).json({
-        success: false,
-        message: "Order already paid",
-      });
-    }
-
-    // Update order with payment details
+    // Mark order as paid and record the eSewa ref_id
     order.paymentStatus = "paid";
     order.orderStatus = "confirmed";
-    order.paymentId = transactionCode;
+    order.paymentId = verificationResult.data?.ref_id || transactionCode || uuidToVerify;
     order.orderUpdateDate = new Date();
 
     // Reduce product stock
-    for (let item of order.cartItems) {
-      let product = await Product.findById(item.productId);
+    for (const item of order.cartItems) {
+      const product = await Product.findById(item.productId);
 
       if (!product) {
         return res.status(404).json({
@@ -329,11 +333,8 @@ const captureEsewaPayment = async (req, res) => {
       await product.save();
     }
 
-    // Delete cart
-    const getCartId = order.cartId;
-    await Cart.findByIdAndDelete(getCartId);
-
-    // Save updated order
+    // Clear the cart
+    await Cart.findByIdAndDelete(order.cartId);
     await order.save();
 
     res.status(200).json({

@@ -35,6 +35,11 @@ const getFilteredProducts = async (req, res) => {
 
         break;
 
+      case "rating-hightolow":
+        sort.averageReview = -1;
+
+        break;
+
       default:
         sort.price = 1;
         break;

@@ -6,6 +6,7 @@ import { Separator } from "../ui/separator";
 import { Input } from "../ui/input";
 import { useDispatch, useSelector } from "react-redux";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../ui/use-toast";
 import { setProductDetails } from "@/store/shop/products-slice";
 import { Label } from "../ui/label";
@@ -22,6 +23,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const { reviews } = useSelector((state) => state.shopReview);
 
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   function handleRatingChange(getRating) {
     console.log(getRating, "getRating");
@@ -48,6 +50,12 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
         }
       }
     }
+    if (!user) {
+      toast({ title: "Please sign up or login to add items to cart" });
+      navigate("/auth/register");
+      return;
+    }
+
     dispatch(
       addToCart({
         userId: user?.id,
@@ -72,6 +80,12 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   }
 
   function handleAddReview() {
+    if (!user) {
+      toast({ title: "Please sign up or login to submit a review" });
+      navigate("/auth/register");
+      return;
+    }
+
     dispatch(
       addReview({
         productId: productDetails?._id,
@@ -81,12 +95,17 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
         reviewValue: rating,
       })
     ).then((data) => {
-      if (data.payload.success) {
+      if (data.payload?.success) {
         setRating(0);
         setReviewMsg("");
         dispatch(getReviews(productDetails?._id));
         toast({
           title: "Review added successfully!",
+        });
+      } else {
+        toast({
+          title: data.payload?.message || "Failed to submit review",
+          variant: "destructive",
         });
       }
     });
@@ -101,7 +120,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   const averageReview =
     reviews && reviews.length > 0
       ? reviews.reduce((sum, reviewItem) => sum + reviewItem.reviewValue, 0) /
-        reviews.length
+      reviews.length
       : 0;
 
   return (
@@ -125,25 +144,38 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
           </div>
           <div className="flex items-center justify-between">
             <p
-              className={`text-3xl font-bold text-primary ${
-                productDetails?.salePrice > 0 ? "line-through" : ""
-              }`}
+              className={`text-3xl font-bold text-primary ${productDetails?.salePrice > 0 ? "line-through" : ""
+                }`}
             >
               Rs {productDetails?.price}
             </p>
             {productDetails?.salePrice > 0 ? (
               <p className="text-2xl font-bold text-muted-foreground">
-              Rs {productDetails?.salePrice}
+                Rs {productDetails?.salePrice}
               </p>
             ) : null}
           </div>
           <div className="flex items-center gap-2 mt-2">
-            <div className="flex items-center gap-0.5">
-              <StarRatingComponent rating={averageReview} />
-            </div>
-            <span className="text-muted-foreground">
-              ({averageReview.toFixed(2)})
-            </span>
+            {averageReview > 0 ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <StarIcon
+                      key={star}
+                      className={`w-5 h-5 ${star <= Math.round(averageReview)
+                        ? "fill-yellow-500 text-yellow-500"
+                        : "fill-gray-200 text-gray-200"
+                        }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-muted-foreground">
+                  ({averageReview.toFixed(2)})
+                </span>
+              </>
+            ) : (
+              <span className="text-muted-foreground text-sm">No ratings yet</span>
+            )}
           </div>
           <div className="mt-5 mb-5">
             {productDetails?.totalStock === 0 ? (
@@ -170,7 +202,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
             <div className="grid gap-6">
               {reviews && reviews.length > 0 ? (
                 reviews.map((reviewItem) => (
-                  <div className="flex gap-4">
+                  <div className="flex gap-4" key={reviewItem._id}>
                     <Avatar className="w-10 h-10 border">
                       <AvatarFallback>
                         {reviewItem?.userName[0].toUpperCase()}
@@ -181,7 +213,15 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                         <h3 className="font-bold">{reviewItem?.userName}</h3>
                       </div>
                       <div className="flex items-center gap-0.5">
-                        <StarRatingComponent rating={reviewItem?.reviewValue} />
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <StarIcon
+                            key={star}
+                            className={`w-4 h-4 ${star <= reviewItem?.reviewValue
+                              ? "fill-yellow-500 text-yellow-500"
+                              : "fill-gray-200 text-gray-200"
+                              }`}
+                          />
+                        ))}
                       </div>
                       <p className="text-muted-foreground">
                         {reviewItem.reviewMessage}
@@ -201,6 +241,11 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
                   handleRatingChange={handleRatingChange}
                 />
               </div>
+              {rating === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Please select a star rating above
+                </p>
+              )}
               <Input
                 name="reviewMsg"
                 value={reviewMsg}
@@ -209,7 +254,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
               />
               <Button
                 onClick={handleAddReview}
-                disabled={reviewMsg.trim() === ""}
+                disabled={reviewMsg.trim() === "" || rating === 0}
               >
                 Submit
               </Button>

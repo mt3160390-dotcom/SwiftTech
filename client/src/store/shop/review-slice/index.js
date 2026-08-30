@@ -8,13 +8,18 @@ const initialState = {
 
 export const addReview = createAsyncThunk(
   "/order/addReview",
-  async (formdata) => {
-    const response = await axios.post(
-      `http://localhost:5000/api/shop/review/add`,
-      formdata
-    );
-
-    return response.data;
+  async (formdata, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/shop/review/add`,
+        formdata
+      );
+      return response.data;
+    } catch (error) {
+      const message =
+        error?.response?.data?.message || "Failed to submit review";
+      return rejectWithValue({ message });
+    }
   }
 );
 

@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
 
@@ -5,7 +6,15 @@ const addToCart = async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
 
-    if (!userId || !productId || quantity <= 0) {
+    if (
+      !userId ||
+      userId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !productId ||
+      productId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(productId) ||
+      quantity <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid data provided!",
@@ -55,10 +64,10 @@ const fetchCartItems = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    if (!userId) {
+    if (!userId || userId === "undefined" || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({
         success: false,
-        message: "User id is manadatory!",
+        message: "Valid user id is mandatory!",
       });
     }
 
@@ -112,7 +121,15 @@ const updateCartItemQty = async (req, res) => {
   try {
     const { userId, productId, quantity } = req.body;
 
-    if (!userId || !productId || quantity <= 0) {
+    if (
+      !userId ||
+      userId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !productId ||
+      productId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(productId) ||
+      quantity <= 0
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid data provided!",
@@ -174,7 +191,14 @@ const updateCartItemQty = async (req, res) => {
 const deleteCartItem = async (req, res) => {
   try {
     const { userId, productId } = req.params;
-    if (!userId || !productId) {
+    if (
+      !userId ||
+      userId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(userId) ||
+      !productId ||
+      productId === "undefined" ||
+      !mongoose.Types.ObjectId.isValid(productId)
+    ) {
       return res.status(400).json({
         success: false,
         message: "Invalid data provided!",

@@ -20,14 +20,14 @@ function ShoppingCheckout() {
   const totalCartAmount =
     cartItems && cartItems.items && cartItems.items.length > 0
       ? cartItems.items.reduce(
-          (sum, currentItem) =>
-            sum +
-            (currentItem?.salePrice > 0
-              ? currentItem?.salePrice
-              : currentItem?.price) *
-              currentItem?.quantity,
-          0
-        )
+        (sum, currentItem) =>
+          sum +
+          (currentItem?.salePrice > 0
+            ? currentItem?.salePrice
+            : currentItem?.price) *
+          currentItem?.quantity,
+        0
+      )
       : 0;
 
   function handleOrderPlacement(paymentMethod) {
@@ -135,41 +135,47 @@ function ShoppingCheckout() {
         totalAmount: totalCartAmount,
       };
 
-      console.log("=== Initiating eSewa Payment ===");
-      console.log("Order Data:", orderData);
-
       const response = await axios.post(
         "http://localhost:5000/api/shop/order/esewa/initiate",
         orderData,
         { withCredentials: true }
       );
 
-      console.log("Backend Response:", response.data);
-
-      if (response.data.success) {
-        const redirectUrl = response.data.data.redirectUrl;
-        const orderId = response.data.data.orderId;
-
-        console.log("Redirect URL:", redirectUrl);
-        console.log("Order ID:", orderId);
-
-        // Store orderId for later verification
-        sessionStorage.setItem("esewaOrderId", orderId);
-
-        // Direct redirect to eSewa
-        console.log("Redirecting to eSewa...");
-        window.location.href = redirectUrl;
-      } else {
+      if (!response.data.success) {
         throw new Error(response.data.message || "Failed to initiate payment");
       }
+
+      const { paymentData, orderId, formUrl } = response.data.data;
+
+      // Persist orderId so the return page can look it up
+      sessionStorage.setItem("esewaOrderId", orderId);
+
+      // eSewa v2 requires a POST form — build and submit one programmatically
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = formUrl;
+      form.style.display = "none";
+
+      Object.entries(paymentData).forEach(([key, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit(); // navigates to eSewa payment page
     } catch (error) {
       console.error("eSewa payment error:", error);
       setIsProcessing(false);
-      
       Swal.fire({
         icon: "error",
         title: "Payment Error!",
-        text: error.response?.data?.message || error.message || "Failed to initiate eSewa payment",
+        text:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to initiate eSewa payment. Please try again.",
       });
     }
   }
@@ -187,8 +193,8 @@ function ShoppingCheckout() {
         <div className="flex flex-col gap-4">
           {cartItems && cartItems.items && cartItems.items.length > 0
             ? cartItems.items.map((item) => (
-                <UserCartItemsContent cartItem={item} key={item.productId} />
-              ))
+              <UserCartItemsContent cartItem={item} key={item.productId} />
+            ))
             : null}
           <div className="mt-8 space-y-4">
             <div className="flex justify-between">

@@ -14,13 +14,14 @@ import appleIcon from "@/assets/apple.png";
 import oneplusIcon from "@/assets/oneplus.png";
 import dellIcon from "@/assets/dell.png";
 import lenovoIcon from "@/assets/lenovo.png";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, StarIcon } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchAllFilteredProducts,
   fetchProductDetails,
+  fetchTopRatedProducts,
 } from "@/store/shop/products-slice";
 import ShoppingProductTile from "@/components/shopping-view/product-tile";
 import { useNavigate } from "react-router-dom";
@@ -59,7 +60,7 @@ const bannerImages = [bannerOne, bannerTwo, bannerThree];
 
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { productList, productDetails } = useSelector(
+  const { productList, productDetails, topRatedList } = useSelector(
     (state) => state.shopProducts
   );
 
@@ -86,6 +87,12 @@ function ShoppingHome() {
   }
 
   function handleAddtoCart(getCurrentProductId) {
+    if (!user) {
+      toast({ title: "Please sign up or login to add items to cart" });
+      navigate("/auth/register");
+      return;
+    }
+
     dispatch(
       addToCart({
         userId: user?.id,
@@ -129,6 +136,10 @@ function ShoppingHome() {
     dispatch(getFeatureImages());
   }, [dispatch]);
 
+  useEffect(() => {
+    dispatch(fetchTopRatedProducts({ limit: 5 }));
+  }, [dispatch]);
+
   return (
     <div className="flex flex-col min-h-screen">
       <div className="relative w-full h-[600px] overflow-hidden">
@@ -136,9 +147,8 @@ function ShoppingHome() {
           <img
             src={image}
             key={index}
-            className={`${
-              index === currentSlide ? "opacity-100" : "opacity-0"
-            } absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000`}
+            className={`${index === currentSlide ? "opacity-100" : "opacity-0"
+              } absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000`}
           />
         ))}
         <Button
@@ -226,24 +236,52 @@ function ShoppingHome() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6"> {/* Changed grid-cols-4 to grid-cols-5 here */}
             {productList && productList.length > 0
               ? productList.map((productItem) => (
-                  <ShoppingProductTile
-                    handleGetProductDetails={handleGetProductDetails}
-                    product={productItem}
-                    handleAddtoCart={handleAddtoCart}
-                    key={productItem.id}
-                  />
-                ))
+                <ShoppingProductTile
+                  handleGetProductDetails={handleGetProductDetails}
+                  product={productItem}
+                  handleAddtoCart={handleAddtoCart}
+                  key={productItem._id || productItem.id}
+                />
+              ))
               : null}
           </div>
         </div>
       </section>
+
+      {/* Top Rated Products — rating-based recommendation section */}
+      {topRatedList && topRatedList.length > 0 && (
+        <section className="py-12 bg-yellow-50">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col items-center mb-8 gap-2">
+              <div className="flex items-center gap-2">
+                <StarIcon className="w-7 h-7 fill-yellow-500 text-yellow-500" />
+                <h2 className="text-3xl font-bold">Top Rated Products</h2>
+                <StarIcon className="w-7 h-7 fill-yellow-500 text-yellow-500" />
+              </div>
+              <p className="text-muted-foreground text-sm">
+                Recommended based on highest customer ratings
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              {topRatedList.map((productItem) => (
+                <ShoppingProductTile
+                  handleGetProductDetails={handleGetProductDetails}
+                  product={productItem}
+                  handleAddtoCart={handleAddtoCart}
+                  key={productItem._id || productItem.id}
+                />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
       <ProductDetailsDialog
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}
         productDetails={productDetails}
       />
     </div>
-    
+
   );
 }
 

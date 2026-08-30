@@ -5,7 +5,6 @@ const PROTECTED_SHOP_PATHS = [
   "/shop/checkout",
   "/shop/account",
   "/shop/paypal-return",
-  "/shop/esewa-return",
   "/shop/payment-success",
 ];
 

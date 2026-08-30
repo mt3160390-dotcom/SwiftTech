@@ -2,6 +2,7 @@ import { Card, CardContent, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
 import { brandOptionsMap, categoryOptionsMap } from "@/config";
 import { Badge } from "../ui/badge";
+import { StarIcon } from "lucide-react";
 
 function ShoppingProductTile({
   product,
@@ -43,18 +44,33 @@ function ShoppingProductTile({
           </div>
           <div className="flex justify-between items-center mb-1">
             <span
-              className={`${
-                product?.salePrice > 0 ? "line-through" : ""
-              }  font-semibold text-primary text-sm`}
+              className={`${product?.salePrice > 0 ? "line-through" : ""
+                }  font-semibold text-primary text-sm`}
             >
               Rs {product?.price}
             </span>
             {product?.salePrice > 0 ? (
               <span className=" font-semibold text-primary text-sm">
-              Rs {product?.salePrice}
+                Rs {product?.salePrice}
               </span>
             ) : null}
           </div>
+          {product?.averageReview > 0 && (
+            <div className="flex items-center gap-0.5 mt-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <StarIcon
+                  key={star}
+                  className={`w-3.5 h-3.5 ${star <= Math.round(product.averageReview)
+                      ? "fill-yellow-500 text-yellow-500"
+                      : "fill-gray-200 text-gray-200"
+                    }`}
+                />
+              ))}
+              <span className="text-xs text-muted-foreground ml-1">
+                ({product.averageReview.toFixed(1)})
+              </span>
+            </div>
+          )}
         </CardContent>
       </div>
       <CardFooter className="p-3">

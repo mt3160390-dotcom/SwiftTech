@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   ChartNoAxesCombined,
+  LayoutDashboard,
   ShoppingBasket,
   Users,
 } from "lucide-react";
@@ -9,6 +10,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 
 const adminSidebarMenuItems = [
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    path: "/admin/dashboard",
+    icon: <LayoutDashboard />,
+  },
   {
     id: "products",
     label: "Products",

@@ -5,6 +5,7 @@ const initialState = {
   isLoading: false,
   productList: [],
   productDetails: null,
+  topRatedList: [],
 };
 
 export const fetchAllFilteredProducts = createAsyncThunk(
@@ -35,6 +36,27 @@ export const fetchProductDetails = createAsyncThunk(
     );
 
     return result?.data;
+  }
+);
+
+// Fetches top-rated products: sorted by rating descending, minimum rating threshold of 1
+export const fetchTopRatedProducts = createAsyncThunk(
+  "/products/fetchTopRatedProducts",
+  async ({ limit = 5 } = {}) => {
+    const query = new URLSearchParams({
+      sortBy: "rating-hightolow",
+    });
+
+    const result = await axios.get(
+      `http://localhost:5000/api/shop/products/get?${query}`
+    );
+
+    // Client-side filter: only products that have been rated, capped to limit
+    const rated = (result?.data?.data || [])
+      .filter((p) => p.averageReview > 0)
+      .slice(0, limit);
+
+    return { ...result?.data, data: rated };
   }
 );
 
@@ -69,6 +91,17 @@ const shoppingProductSlice = createSlice({
       .addCase(fetchProductDetails.rejected, (state, action) => {
         state.isLoading = false;
         state.productDetails = null;
+      })
+      .addCase(fetchTopRatedProducts.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchTopRatedProducts.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.topRatedList = action.payload.data;
+      })
+      .addCase(fetchTopRatedProducts.rejected, (state) => {
+        state.isLoading = false;
+        state.topRatedList = [];
       });
   },
 });

@@ -6,6 +6,7 @@ const initialState = {
   productList: [],
   productDetails: null,
   topRatedList: [],
+  similarProducts: [],
 };
 
 export const fetchAllFilteredProducts = createAsyncThunk(
@@ -40,8 +41,7 @@ export const fetchProductDetails = createAsyncThunk(
 );
 
 // Fetches top-rated products: sorted by rating descending, minimum rating threshold of 1
-export const fetchTopRatedProducts = createAsyncThunk(
-  "/products/fetchTopRatedProducts",
+export const fetchTopRatedProducts = createAsyncThunk("/products/fetchTopRatedProducts",
   async ({ limit = 5 } = {}) => {
     const query = new URLSearchParams({
       sortBy: "rating-hightolow",
@@ -60,12 +60,26 @@ export const fetchTopRatedProducts = createAsyncThunk(
   }
 );
 
+// Hybrid Recommendation: fetches products scored by content-based + collaborative filtering
+export const fetchSimilarProducts = createAsyncThunk(
+  "/products/fetchSimilarProducts",
+  async ({ productId, limit = 5 }) => {
+    const result = await axios.get(
+      `http://localhost:5000/api/shop/products/recommendations/${productId}?limit=${limit}`
+    );
+    return result?.data;
+  }
+);
+
 const shoppingProductSlice = createSlice({
   name: "shoppingProducts",
   initialState,
   reducers: {
     setProductDetails: (state) => {
       state.productDetails = null;
+    },
+    clearSimilarProducts: (state) => {
+      state.similarProducts = [];
     },
   },
   extraReducers: (builder) => {
@@ -102,10 +116,21 @@ const shoppingProductSlice = createSlice({
       .addCase(fetchTopRatedProducts.rejected, (state) => {
         state.isLoading = false;
         state.topRatedList = [];
+      })
+      .addCase(fetchSimilarProducts.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchSimilarProducts.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.similarProducts = action.payload.data;
+      })
+      .addCase(fetchSimilarProducts.rejected, (state) => {
+        state.isLoading = false;
+        state.similarProducts = [];
       });
   },
 });
 
-export const { setProductDetails } = shoppingProductSlice.actions;
+export const { setProductDetails, clearSimilarProducts } = shoppingProductSlice.actions;
 
 export default shoppingProductSlice.reducer;

@@ -121,6 +121,7 @@ function SearchProducts() {
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}
         productDetails={productDetails}
+        handleGetProductDetails={handleGetProductDetails}
       />
     </div>
   );

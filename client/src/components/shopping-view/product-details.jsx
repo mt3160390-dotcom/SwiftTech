@@ -8,13 +8,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "../ui/use-toast";
-import { setProductDetails } from "@/store/shop/products-slice";
+import { setProductDetails, clearSimilarProducts } from "@/store/shop/products-slice";
 import { Label } from "../ui/label";
 import StarRatingComponent from "../common/star-rating";
 import { useEffect, useState } from "react";
 import { addReview, getReviews } from "@/store/shop/review-slice";
+import SimilarProducts from "./similar-products";
 
-function ProductDetailsDialog({ open, setOpen, productDetails }) {
+function ProductDetailsDialog({ open, setOpen, productDetails, handleGetProductDetails }) {
   const [reviewMsg, setReviewMsg] = useState("");
   const [rating, setRating] = useState(0);
   const dispatch = useDispatch();
@@ -75,6 +76,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
   function handleDialogClose() {
     setOpen(false);
     dispatch(setProductDetails());
+    dispatch(clearSimilarProducts());
     setRating(0);
     setReviewMsg("");
   }
@@ -260,6 +262,15 @@ function ProductDetailsDialog({ open, setOpen, productDetails }) {
               </Button>
             </div>
           </div>
+
+          {/* Hybrid Recommendation — "You May Also Like" */}
+          {productDetails?._id && (
+            <SimilarProducts
+              productId={productDetails._id}
+              limit={5}
+              onProductClick={handleGetProductDetails}
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>

@@ -127,32 +127,30 @@ function ProductDetailsDialog({ open, setOpen, productDetails, handleGetProductD
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="grid grid-cols-2 gap-8 sm:p-12 max-w-[90vw] sm:max-w-[80vw] lg:max-w-[70vw]">
-        <div className="relative overflow-hidden rounded-lg">
+      <DialogContent className="flex flex-col sm:flex-row gap-6 p-5 sm:p-8 max-w-[95vw] sm:max-w-[85vw] lg:max-w-[75vw] max-h-[90vh] overflow-y-auto">
+        <div className="flex-shrink-0 sm:w-[240px] lg:w-[280px] flex items-start justify-center">
           <img
             src={productDetails?.image}
             alt={productDetails?.title}
-            width={600}
-            height={600}
-            className="aspect-square w-full object-cover"
+            className="w-full max-h-[260px] object-contain rounded-lg"
           />
         </div>
-        <div className="">
+        <div className="flex-1 min-w-0">
           <div>
-            <h1 className="text-3xl font-extrabold">{productDetails?.title}</h1>
-            <p className="text-muted-foreground text-2xl mb-5 mt-4">
+            <h1 className="text-xl sm:text-2xl font-extrabold">{productDetails?.title}</h1>
+            <p className="text-muted-foreground text-sm sm:text-base mb-4 mt-3">
               {productDetails?.description}
             </p>
           </div>
           <div className="flex items-center justify-between">
             <p
-              className={`text-3xl font-bold text-primary ${productDetails?.salePrice > 0 ? "line-through" : ""
+              className={`text-xl sm:text-2xl font-bold text-primary ${productDetails?.salePrice > 0 ? "line-through" : ""
                 }`}
             >
               Rs {productDetails?.price}
             </p>
             {productDetails?.salePrice > 0 ? (
-              <p className="text-2xl font-bold text-muted-foreground">
+              <p className="text-xl sm:text-2xl font-bold text-muted-foreground">
                 Rs {productDetails?.salePrice}
               </p>
             ) : null}
@@ -199,7 +197,7 @@ function ProductDetailsDialog({ open, setOpen, productDetails, handleGetProductD
             )}
           </div>
           <Separator />
-          <div className="max-h-[300px] overflow-auto">
+          <div className="mt-2">
             <h2 className="text-xl font-bold mb-4">Reviews</h2>
             <div className="grid gap-6">
               {reviews && reviews.length > 0 ? (
